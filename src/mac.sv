@@ -528,7 +528,7 @@ module mac # (
     always_comb begin
         crc = 0;
 
-        if (curr_state == DESTINATION_ADDR | curr_state == SOURCE_ADDR | curr_state == LENGTH | curr_state == DATA) begin
+        if (curr_state == DESTINATION_ADDR || curr_state == SOURCE_ADDR || curr_state == LENGTH || curr_state == DATA || curr_state == DATA_MIN) begin
             crc = (crc_reg >> 8) ^ CRC32_LUT[(crc_reg[7:0] ^ txd)];
         end
     end

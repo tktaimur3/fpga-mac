@@ -100,9 +100,8 @@ module top (
         .reset_n    (resetn),
         .tvalid     (axi_tx_tvalid),
         .tready     (axi_tx_tready),
+        .tlast      (axi_tx_tlast),
         .char       (axi_tx_tdata)
     );
-    
-    assign axi_tx_tlast = 0;
 
 endmodule
