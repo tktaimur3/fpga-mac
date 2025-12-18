@@ -6,3 +6,6 @@ MAC.hw/**
 MAC.ip_user_files/**
 MAC.runs/**
 MAC.sim/**
+dfx_runtime.txt
+*.jou
+*.log
