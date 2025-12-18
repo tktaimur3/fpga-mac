@@ -1,17 +1,34 @@
 # -----------------------------
 # User configuration
 # -----------------------------
-set PROJECT_NAME MAC_PROJ
+set PROJECT_NAME MAC
 set PART xc7a35tfgg484-2
 set TOP top                     ;# top-level module name
 
-set SRC_DIR ./MAC.srcs/sources_1/new
-set CONSTR_DIR ./MAC.srcs/constrs_1/new
+set SRC_DIR ./src
+set CONSTR_DIR ./constr
+set IP_DIR ./ip
 
 # -----------------------------
 # Create project
 # -----------------------------
-create_project $PROJECT_NAME . -part $PART
+create_project $PROJECT_NAME . -part $PART -force
+
+# -----------------------------
+# IP handling
+# -----------------------------
+set ip_files [glob -nocomplain $IP_DIR/**/*.xci]
+
+if {[llength $ip_files] > 0} {
+    puts "Found IP:"
+    foreach ip $ip_files { puts "  $ip" }
+
+    import_ip $ip_files
+
+    upgrade_ip [get_ips *]
+    generate_target all [get_ips *]
+    synth_ip [get_ips *]
+}
 
 # -----------------------------
 # Add RTL sources
