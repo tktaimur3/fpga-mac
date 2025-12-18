@@ -23,6 +23,7 @@
 `define PREAMBLE_LEN (8)
 `define MAC_ADDR_LEN (6)
 `define CRC_LEN (4)
+`define FRAME_GAP_LEN (10) // actually 12, the smallest delay will still be 12 due to the 2 cycle delay between txen -> txctl on the ODDR
 
 module mac # (
     parameter [7:0] SRC_MAC_ADDRESS [0:5] = '{8'h02, 8'hDE, 8'hAD, 8'hBE, 8'hEF, 8'h01},
@@ -117,6 +118,9 @@ module mac # (
     // finish
     logic finish_cnt;
 
+    // frame gap
+    logic [3:0] frame_gap_cnt;
+
     // MDIO FSM inst
     mdio_fsm mdio_fsm_inst (
         .clk                (clk),
@@ -172,8 +176,10 @@ module mac # (
         SOURCE_ADDR,
         LENGTH,
         DATA,
+        DATA_MIN,
         CRC,
-        FINISH
+        FINISH,
+        FRAME_GAP
     } fsm_state_t;
 
     fsm_state_t curr_state;
@@ -193,8 +199,6 @@ module mac # (
         .R(1'b0),
         .S(1'b0)
     );
-
-    // assign rgmii_txc = clk;
 
     // ODDR TXCTL
     ODDR #(
@@ -234,6 +238,9 @@ module mac # (
 
     logic mdio_fsm_done_reg_reg;
 
+    logic mdio_fsm_poll_link_down;
+    assign mdio_fsm_poll_link_down = mdio_fsm_done & !(bmsr[2] & bmsr[5]);
+
     always_ff @(posedge clk) begin
         if (!resetn) begin
         `ifndef SYNTHESIS
@@ -258,6 +265,7 @@ module mac # (
             finish_cnt <= 0;
             transmitting <= 0;
             mdio_fsm_done_reg_reg <= 0;
+            frame_gap_cnt <= 0;
         end else begin
             curr_state <= next_state;
             mdio_fsm_done_reg <= mdio_fsm_done;
@@ -272,22 +280,23 @@ module mac # (
                 mdio_fsm_done_reg_reg <= 1;
             end
 
-            if (curr_state == IDLE | curr_state == LINK_STATUS_POLL) begin
-                preamble <= 0;
-                mac_addr <= 0;
-                crc_cnt <= 0;
+            if (curr_state == IDLE || curr_state == LINK_STATUS_POLL) begin
                 data_cnt <= 0;
+                frame_gap_cnt <= 0;
                 crc_reg <= 32'hFFFFFFFF;
                 finish_cnt <= 0;
-                // transmitting <= 0;
             end if (curr_state == PREAMBLE) begin
+                data_cnt <= 0;
+                frame_gap_cnt <= 0;
+                crc_reg <= 32'hFFFFFFFF;
+                finish_cnt <= 0;
+
                 if (preamble == `PREAMBLE_LEN-1) begin
                     preamble <= 0;
                 end else begin
                     preamble <= preamble + 1;
                 end
-
-            end else if (curr_state == DESTINATION_ADDR | curr_state == SOURCE_ADDR) begin
+            end else if (curr_state == DESTINATION_ADDR || curr_state == SOURCE_ADDR) begin
                 crc_reg <= crc;
 
                 if (mac_addr == `MAC_ADDR_LEN-1) begin
@@ -305,7 +314,7 @@ module mac # (
                     if (data_len_cnt == 0)  data_length[15:6] <= axi_tx_tdata;
                     else                    data_length[7:0]  <= axi_tx_tdata;
                 end
-            end else if (curr_state == DATA) begin
+            end else if (curr_state == DATA || curr_state == DATA_MIN) begin
                 data_cnt <= data_cnt + 1;
                 crc_reg <= crc;
             end else if (curr_state == CRC) begin
@@ -319,6 +328,12 @@ module mac # (
                 transmitting <= 1;
             end else if (curr_state == FINISH) begin
                 finish_cnt <= finish_cnt + 1;
+            end else if (curr_state == FRAME_GAP) begin
+                if (frame_gap_cnt == `FRAME_GAP_LEN-1) begin
+                    frame_gap_cnt <= 0;
+                end else begin
+                    frame_gap_cnt <= frame_gap_cnt + 1;
+                end
             end
 
         end
@@ -355,9 +370,12 @@ module mac # (
                 // if no valid from upstream, poll the link
                 if (axi_tx_tvalid) begin
                     next_state = PREAMBLE;
-                end else begin
+                end
+            `ifdef SYNTHESIS
+                else begin
                     next_state = LINK_STATUS_POLL;
                 end
+            `endif
             end
             PREAMBLE: begin
                 oddr_clk_en = 1;
@@ -409,18 +427,26 @@ module mac # (
                 end
             end
             DATA: begin
-                // TODO: only handles IEEE 802.3 packet, not Ethernet II packet, handle data_length > 1536
                 oddr_clk_en = 1;
-                axi_tx_tready = (data_cnt < data_length);
+                axi_tx_tready = 1;
                 txen = 1;
-                txd = (data_cnt < data_length) ? axi_tx_tdata : 8'h00;
+                txd = axi_tx_tdata;
 
-                if ((data_cnt < data_length) & !axi_tx_tvalid) begin
+                if (axi_tx_tlast && data_cnt < `MIN_PAYLOAD_LEN-1) begin
+                    next_state = DATA_MIN;
+                end else if (!axi_tx_tvalid) begin
                     next_state = FINISH;
                     txerr = 1;
-                end else if (data_cnt == ((data_length >= `MIN_PAYLOAD_LEN) ? data_length-1 : `MIN_PAYLOAD_LEN-1)) begin
+                end else if (axi_tx_tlast) begin
                     next_state = CRC;
                 end
+            end
+            DATA_MIN: begin
+                oddr_clk_en = 1;
+                txen = 1;
+                txd = 8'h00;
+
+                if (data_cnt == `MIN_PAYLOAD_LEN-1) next_state = CRC;
             end
             CRC: begin
                 oddr_clk_en = 1;
@@ -440,13 +466,11 @@ module mac # (
                 // also if this happens after CRC this will probably be wrong, need "finish error" state
                 // if (!axi_tx_tvalid) txerr = 1;
 
-                if (finish_cnt == 1) begin
-                `ifndef SYNTHESIS
-                    next_state = IDLE;
-                `else
-                    next_state = IDLE;
-                `endif
-                end
+                if (finish_cnt == 1) next_state = FRAME_GAP;
+            end
+            FRAME_GAP: begin
+                if (frame_gap_cnt == `FRAME_GAP_LEN-1 && axi_tx_tvalid) next_state = PREAMBLE;
+                else if (frame_gap_cnt == `FRAME_GAP_LEN-1)             next_state = IDLE;
             end
 
             default: begin

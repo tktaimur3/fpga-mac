@@ -186,6 +186,7 @@ module testbench_mac;
         .reset_n    (resetn),
         .tvalid     (axi_tx_tvalid),
         .tready     (axi_tx_tready),
+        .tlast      (axi_tx_tlast),
         .char       (axi_tx_tdata)
     );
 

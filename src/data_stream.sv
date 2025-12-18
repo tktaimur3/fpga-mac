@@ -8,15 +8,16 @@ module data_stream # (
     input reset_n,
     input tready,
     output tvalid,
+    output tlast,
     output [7:0] char
     );
 
     `define TOTAL_LEN (MSG_LEN+2)
 
-    parameter [31:0] WAIT_CNT = 52;
+    parameter [31:0] WAIT_CNT = 10;
     parameter [5:0] DATA_SENT_CNT = 10;
 
-    reg valid_reg;
+    logic valid_reg;
     logic [7:0] char_reg;
     reg [7:0] message [0:MSG_LEN-1];
     reg [15:0] char_ptr;
@@ -57,7 +58,7 @@ module data_stream # (
 
             if ((wait_cnt == WAIT_CNT) &&
                 (data_sent_cnt < DATA_SENT_CNT) &&
-                (char_ptr < `TOTAL_LEN)) begin
+                (char_ptr < `TOTAL_LEN-1)) begin
                 valid_reg <= 1;
             end else begin
                 valid_reg <= 0;
@@ -72,6 +73,7 @@ module data_stream # (
         else                            char_reg = 0;
     end
     
+    assign tlast = tvalid && tready && (char_ptr == `TOTAL_LEN-1);
     assign tvalid = valid_reg;
     assign char = char_reg;
    

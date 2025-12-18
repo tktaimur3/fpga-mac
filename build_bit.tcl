@@ -8,6 +8,7 @@ set TOP top                     ;# top-level module name
 set SRC_DIR ./src
 set CONSTR_DIR ./constr
 set IP_DIR ./ip
+set SIM_DIR ./sim
 
 # -----------------------------
 # Create project
@@ -28,6 +29,14 @@ if {[llength $ip_files] > 0} {
     upgrade_ip [get_ips *]
     generate_target all [get_ips *]
     synth_ip [get_ips *]
+}
+
+# -----------------------------
+# Add sim files
+# -----------------------------
+set sim_files [glob $SIM_DIR/*.sv]
+if {[llength $sim_files] > 0} {
+    add_files -fileset sim_1 $sim_files
 }
 
 # -----------------------------
@@ -53,7 +62,7 @@ update_compile_order -fileset sources_1
 # -----------------------------
 # Synthesis
 # -----------------------------
-launch_runs synth_1 -jobs 8
+launch_runs synth_1 -jobs 16
 wait_on_run synth_1
 open_run synth_1
 report_utilization -file utilization.txt
@@ -61,7 +70,7 @@ report_utilization -file utilization.txt
 # -----------------------------
 # Implementation + bitstream
 # -----------------------------
-launch_runs impl_1 -to_step write_bitstream -jobs 8
+launch_runs impl_1 -to_step write_bitstream -jobs 16
 wait_on_run impl_1
 open_run impl_1
 report_timing_summary -file timing.txt
