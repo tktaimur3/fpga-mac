@@ -1,0 +1,8 @@
+.vscode
+*.xpr
+MAC.cache/**
+MAC.gen/**
+MAC.hw/**
+MAC.ip_user_files/**
+MAC.runs/**
+MAC.sim/**
