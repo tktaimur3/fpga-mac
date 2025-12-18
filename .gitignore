@@ -7,7 +7,7 @@
 **.ip_user_files/**
 **.runs/**
 **.sim/**
-**.srcs/utils_1/**
+**.srcs/**
 dfx_runtime.txt
 *.jou
 *.log
