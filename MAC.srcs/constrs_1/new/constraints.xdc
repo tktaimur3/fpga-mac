@@ -15,16 +15,6 @@ set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports sys_rstn]
 # 125 MHz
 create_clock -name rgmii_clk -period 8 [get_ports gphy_txc]
 
-# Data relative to forwarded clock
-#set_output_delay -clock rgmii_clk -min 1.2 [get_ports gphy_txd[*]]
-#set_output_delay -clock rgmii_clk -min 1.2 [get_ports gphy_txctl]
-
-#set_output_delay -clock rgmii_clk -min -1.2 [get_ports gphy_txd[*]]
-#set_output_delay -clock rgmii_clk -min -1.2 [get_ports gphy_txctl]
-
-#set_output_delay 1.0 -clock rgmii_clk [get_ports {gphy_txd[*]}]
-#set_output_delay 1.0 -clock rgmii_clk [get_ports gphy_txctl]
-
 # GPHY inputs
 # MDIO
 set_property -dict {PACKAGE_PIN T20 IOSTANDARD LVCMOS33} [get_ports {gphy_resetn}]
