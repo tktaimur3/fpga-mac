@@ -13,9 +13,9 @@ module data_stream # (
     );
 
     `define TOTAL_LEN (MSG_LEN+2)
+    `define DATA_SENT_CNT (20)
 
     parameter [31:0] WAIT_CNT = 10;
-    parameter [5:0] DATA_SENT_CNT = 10;
 
     logic valid_reg;
     logic [7:0] char_reg;
@@ -23,7 +23,7 @@ module data_stream # (
     reg [15:0] char_ptr;
     reg [15:0] len;
     reg [31:0] wait_cnt;
-    reg [5:0] data_sent_cnt;
+    reg [11:0] data_sent_cnt;
 
     genvar i;
         generate
@@ -57,7 +57,7 @@ module data_stream # (
             end
 
             if ((wait_cnt == WAIT_CNT) &&
-                (data_sent_cnt < DATA_SENT_CNT) &&
+                (data_sent_cnt < `DATA_SENT_CNT) &&
                 (char_ptr < `TOTAL_LEN-1)) begin
                 valid_reg <= 1;
             end else begin
