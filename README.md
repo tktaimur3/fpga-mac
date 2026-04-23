@@ -1,6 +1,8 @@
 # FPGA Ethernet MAC
 
-A 1 Gbps Ethernet MAC implementation in SystemVerilog targeting the Xilinx Artix-7 FPGA. The design handles Ethernet frame TX over an RGMII interface and manages the external PHY via MDIO.
+A 1 Gbps Ethernet MAC implementation in SystemVerilog targeting the [Xilinx Artix-7 FPGA](https://www.en.puzhi.com/Product/AMD-FPGA-Development-Board/Artix-7/PA35T-StarLite). The design handles Ethernet frame TX over an RGMII interface and manages the external PHY via MDIO.
+
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/43093680-b95e-4c9b-8d55-91c1029a1449" />
 
 ## Features
 
@@ -71,7 +73,6 @@ constr/         XDC pin constraints
 ip/             Vivado IP (clk_wiz_0)
 build_bit.tcl   Vivado batch build script
 Makefile        Build targets
-notes.md        Known issues / design notes
 ```
 
 ## Building
@@ -118,7 +119,6 @@ The `data_stream` module is parameterized with `MSG_LEN` and `MESSAGE` and sends
 
 **TX path**
 - Store-and-forward buffer: the current cut-through design has no recovery path if `tready` drops mid-frame (e.g. link goes down). A FIFO-backed approach would let the MAC abort or retry gracefully.
-- MAC error signalling: partial error logic exists in git stash and needs review and integration.
 
 **RX path**
 - RGMII RX input capture (IDDR primitives for DDR sampling)
