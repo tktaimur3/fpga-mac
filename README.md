@@ -73,7 +73,6 @@ constr/         XDC pin constraints
 ip/             Vivado IP (clk_wiz_0)
 build_bit.tcl   Vivado batch build script
 Makefile        Build targets
-notes.md        Known issues / design notes
 ```
 
 ## Building
@@ -120,7 +119,6 @@ The `data_stream` module is parameterized with `MSG_LEN` and `MESSAGE` and sends
 
 **TX path**
 - Store-and-forward buffer: the current cut-through design has no recovery path if `tready` drops mid-frame (e.g. link goes down). A FIFO-backed approach would let the MAC abort or retry gracefully.
-- MAC error signalling: partial error logic exists in git stash and needs review and integration.
 
 **RX path**
 - RGMII RX input capture (IDDR primitives for DDR sampling)
