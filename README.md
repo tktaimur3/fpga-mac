@@ -26,7 +26,9 @@ data_stream ──AXI-S──> mac ──RGMII──> PHY
 | Module | File | Description |
 |---|---|---|
 | `top` | `src/top_mac.sv` | Top-level: clock generation (200 MHz diff → 125 MHz PLL), pin mapping |
-| `mac` | `src/mac.sv` | TX FSM, ODDR clock forwarding, CRC32, MDIO orchestration |
+| `mac` | `src/mac.sv` | Top-level MAC wrapper: instantiates `mac_tx`, `mac_rx`, `mdio_fsm`, `mdio` |
+| `mac_tx` | `src/mac_tx.sv` | TX FSM, ODDR clock forwarding, CRC32 |
+| `mac_rx` | `src/mac_rx.sv` | RX datapath (placeholder, not yet implemented) |
 | `mdio` | `src/mdio.sv` | MDIO serial controller, MDC clock generation (~12.5 MHz) |
 | `mdio_fsm` | `src/mdio_fsm.sv` | PHY initialization and link-status polling FSM |
 | `data_stream` | `src/data_stream.sv` | Parameterized test pattern generator (AXI Stream master) |
@@ -69,6 +71,7 @@ After the first run the FSM loops back to just polling BMSR/PHYSR on each `start
 ```
 src/            RTL source files
 sim/            Testbenches (MAC and MDIO)
+scripts/        Host-side Python utilities (frame injectors, etc.)
 constr/         XDC pin constraints
 ip/             Vivado IP (clk_wiz_0)
 build_bit.tcl   Vivado batch build script
@@ -95,6 +98,22 @@ MAC.sim/sim_1/behav/xsim/simulate.bat
 ```
 
 The `data_stream` module is parameterized with `MSG_LEN` and `MESSAGE` and sends up to `DATA_SENT_CNT` (20) frames before stopping. In simulation the MAC starts in `IDLE` instead of `LINK_STATUS_POLL`, so no MDIO traffic is needed to begin TX.
+
+## Host Tools
+
+The `scripts/` directory holds Python utilities for driving or inspecting the MAC from a host PC.
+
+| Script | Description |
+|---|---|
+| `scripts/send_hello.py` | Sends a barebones IEEE 802.3 broadcast frame with `"HELLO WORLD"` as payload, zero-padded to the 60-byte minimum |
+
+Requires `scapy` (`pip install scapy`). On Windows, also install [Npcap](https://npcap.com/) for raw L2 send. Run with admin/root.
+
+```bash
+python scripts/send_hello.py -l                    # list network interfaces
+python scripts/send_hello.py -i "Ethernet"         # send on a named interface
+python scripts/send_hello.py -i "Ethernet" -n 10   # send 10 copies
+```
 
 ## Status & Roadmap
 
