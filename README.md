@@ -1,6 +1,6 @@
 # FPGA Ethernet MAC
 
-A 1 Gbps Ethernet MAC implementation in SystemVerilog targeting the [Xilinx Artix-7 FPGA](https://www.en.puzhi.com/Product/AMD-FPGA-Development-Board/Artix-7/PA35T-StarLite). The design handles Ethernet frame TX over an RGMII interface and manages the external PHY via MDIO.
+A 1 Gbps Ethernet MAC implementation in SystemVerilog targeting the [Xilinx Artix-7 FPGA](https://www.en.puzhi.com/Product/AMD-FPGA-Development-Board/Artix-7/PA35T-StarLite). The design handles Ethernet frame TX over an RGMII interface and manages the external PHY via MDIO. The PHY on the FPGA board is a Realtek RTL8211FS, which is connected through RGMII.
 
 <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/43093680-b95e-4c9b-8d55-91c1029a1449" />
 
@@ -59,6 +59,7 @@ After the first run the FSM loops back to just polling BMSR/PHYSR on each `start
 | Item | Value |
 |---|---|
 | Device | Xilinx Artix-7 `xc7a35tfgg484-2` |
+| PHY | Realtek RTL8211FS |
 | Input clock | 200 MHz differential (SSTL15) |
 | MAC clock | 125 MHz (from PLL/`clk_wiz_0`) |
 | PHY address | `0x01` |
